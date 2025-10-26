@@ -1,0 +1,70 @@
+﻿@page
+@using Microsoft.AspNetCore.Mvc.Rendering
+@model EPC.WEB.Pages.Admin.ReportsModel
+
+@{
+    ViewData["Title"] = "Sales Report";
+}
+
+<h2 class="mb-4">Sales Report</h2>
+
+<form method="get" class="row g-3 mb-4">
+    <div class="col-md-4">
+        <label asp-for="AppUserId" class="form-label">Employee</label>
+        <select asp-for="AppUserId" asp-items="@(new SelectList(Model.Employees, "Id", "FullName"))" class="form-select">
+            <option value="">All</option>
+        </select>
+    </div>
+    <div class="col-md-4">
+        <label class="form-label">Start Date</label>
+        <input type="date" asp-for="StartDate" class="form-control" />
+    </div>
+    <div class="col-md-4">
+        <label class="form-label">End Date</label>
+        <input type="date" asp-for="EndDate" class="form-control" />
+    </div>
+    <div class="col-md-8">
+        <label asp-for="Search" class="form-label">Search Category or Subcategory</label>
+        <input asp-for="Search" class="form-control" placeholder="Search..." />
+    </div>
+    <div class="col-md-4 align-self-end">
+        <button type="submit" class="btn btn-primary w-100">Apply Filters</button>
+    </div>
+</form>
+
+@if (Model.TotalsByCategory.Any())
+{
+    <canvas id="salesChart" width="800" height="400"></canvas>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        const data = {
+            labels: @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(Model.TotalsByCategory.Keys)),
+            datasets: [{
+                label: 'Sales by Category',
+                data: @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(Model.TotalsByCategory.Values)),
+                backgroundColor: 'rgba(75, 192, 192, 0.5)',
+                borderColor: 'rgba(75, 192, 192, 1)',
+                borderWidth: 1
+            }]
+        };
+
+        new Chart(document.getElementById('salesChart'), {
+            type: 'bar',
+            data: data,
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: { position: 'top' },
+                    title: {
+                        display: true,
+                        text: 'Filtered Sales by Category'
+                    }
+                }
+            }
+        });
+    </script>
+}
+else
+{
+    <p class="text-muted">No sales data found for the selected filters.</p>
+}

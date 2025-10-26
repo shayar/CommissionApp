@@ -1,0 +1,19 @@
+﻿@page
+@model EPC.WEB.Pages.Sales.LogModel
+<h2>Log a Sale</h2>
+<form method="post">
+    <div class="form-group">
+        <label>SubCategory</label>
+        <select asp-for="SubCategoryId" class="form-control">
+            @foreach (var sc in Model.SubCategories)
+            {
+                <option value="@sc.Id">@sc.Category.Name - @sc.Name</option>
+            }
+        </select>
+    </div>
+    <div class="form-group">
+        <label>Amount</label>
+        <input asp-for="Amount" class="form-control" />
+    </div>
+    <button type="submit" class="btn btn-primary">Log Sale</button>
+</form>

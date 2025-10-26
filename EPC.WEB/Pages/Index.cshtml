@@ -1,0 +1,115 @@
+﻿@page
+@model EPC.WEB.Pages.IndexModel
+@{
+    ViewData["Title"] = "Initial Store Setup";
+}
+
+<div class="row justify-content-center">
+    <div class="col-md-10 col-lg-8">
+        <div class="card shadow-sm rounded">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0">Initial Store Setup</h4>
+            </div>
+            <div class="card-body">
+
+                @* Show validation summary for general errors *@
+                @if (!ViewData.ModelState.IsValid)
+                {
+                    <div class="alert alert-danger">
+                        <strong>Something went wrong:</strong>
+                        <ul class="mb-0">
+                            @foreach (var error in ViewData.ModelState.Values.SelectMany(v => v.Errors))
+                            {
+                                <li>@error.ErrorMessage</li>
+                            }
+                        </ul>
+                    </div>
+                }
+
+                <form method="post">
+                    <fieldset>
+                        <legend class="text-secondary">Store Information</legend>
+                        <div class="form-row mb-3">
+                            <div class="col">
+                                <label asp-for="StoreCode">Store Number</label>
+                                <input asp-for="StoreCode" class="form-control" />
+                                <span asp-validation-for="StoreCode" class="text-danger small"></span>
+                            </div>
+                            <div class="col">
+                                <label asp-for="StoreName">Store Name</label>
+                                <input asp-for="StoreName" class="form-control" />
+                                <span asp-validation-for="StoreName" class="text-danger small"></span>
+                            </div>
+                        </div>
+
+                        <div class="form-group mb-3">
+                            <label asp-for="StreetAddress1">Street Address 1</label>
+                            <input asp-for="StreetAddress1" class="form-control" />
+                            <span asp-validation-for="StreetAddress1" class="text-danger small"></span>
+                        </div>
+
+                        <div class="form-group mb-3">
+                            <label asp-for="StreetAddress2">Street Address 2 (optional)</label>
+                            <input asp-for="StreetAddress2" class="form-control" placeholder="Apt, suite, etc. (optional)" />
+                        </div>
+
+                        <div class="form-row mb-3">
+                            <div class="col-md-4">
+                                <label asp-for="City"></label>
+                                <input asp-for="City" class="form-control" />
+                                <span asp-validation-for="City" class="text-danger small"></span>
+                            </div>
+                            <div class="col-md-4">
+                                <label asp-for="State"></label>
+                                <input asp-for="State" class="form-control" />
+                                <span asp-validation-for="State" class="text-danger small"></span>
+                            </div>
+                            <div class="col-md-4">
+                                <label asp-for="ZipCode">Zip Code</label>
+                                <input asp-for="ZipCode" class="form-control" />
+                                <span asp-validation-for="ZipCode" class="text-danger small"></span>
+                            </div>
+                        </div>
+
+                        <div class="form-row mb-3">
+                            <div class="col">
+                                <label asp-for="PhoneNumber">Phone number</label>
+                                <input asp-for="PhoneNumber" class="form-control" />
+                                <span asp-validation-for="PhoneNumber" class="text-danger small"></span>
+                            </div>
+                            <div class="col">
+                                <label asp-for="Country"></label>
+                                <select asp-for="Country" class="form-control">
+                                    <option value="US">United States</option>
+                                    <option value="CA">Canada</option>
+                                </select>
+                            </div>
+                        </div>
+                    </fieldset>
+
+                    <fieldset class="mt-4">
+                        <legend class="text-secondary">Admin Account</legend>
+                        <div class="form-group mb-3">
+                            <label asp-for="AdminEmail">Admin Email</label>
+                            <input asp-for="AdminEmail" class="form-control" />
+                            <span asp-validation-for="AdminEmail" class="text-danger small"></span>
+                        </div>
+                        <div class="form-group mb-3">
+                            <label asp-for="AdminPassword">Admin Password</label>
+                            <input asp-for="AdminPassword" type="password" class="form-control" />
+                            <span asp-validation-for="AdminPassword" class="text-danger small"></span>
+                        </div>
+                    </fieldset>
+
+                    <div class="text-end mt-4">
+                        <button type="submit" class="btn btn-success">Complete Setup</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

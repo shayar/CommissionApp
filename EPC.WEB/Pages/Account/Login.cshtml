@@ -1,0 +1,58 @@
+﻿@page
+@model EPC.WEB.Pages.Account.LoginModel
+@{
+    ViewData["Title"] = "Login";
+}
+<h2 class="text-center mb-4">Login to @Model.StoreName</h2>
+
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card shadow-sm p-4">
+
+            @* Show validation summary for general errors *@
+            @if (!ViewData.ModelState.IsValid)
+            {
+                <div class="alert alert-danger">
+                    <strong>Login failed:</strong>
+                    <ul class="mb-0">
+                        @foreach (var error in ViewData.ModelState.Values.SelectMany(v => v.Errors))
+                        {
+                            <li>@error.ErrorMessage</li>
+                        }
+                    </ul>
+                </div>
+            }
+
+            <form method="post">
+                <div class="form-group mb-3">
+                    <label asp-for="Input.StoreId">Store Number</label>
+                    <input asp-for="Input.StoreId" class="form-control" />
+                    <span asp-validation-for="Input.StoreId" class="text-danger small"></span>
+                </div>
+
+                <div class="form-group mb-3">
+                    <label asp-for="Input.EmployeeOrEmail">Employee Id or Email</label>
+                    <input asp-for="Input.EmployeeOrEmail" class="form-control" />
+                    <span asp-validation-for="Input.EmployeeOrEmail" class="text-danger small"></span>
+                </div>
+
+                <div class="form-group mb-3">
+                    <label asp-for="Input.Password"></label>
+                    <input asp-for="Input.Password" type="password" class="form-control" />
+                    <span asp-validation-for="Input.Password" class="text-danger small"></span>
+                </div>
+
+                <button type="submit" class="btn btn-primary w-100">Login</button>
+
+                <div class="mt-3 text-center">
+                    <a asp-page="/Account/ForgetPassword">Forgot Password?</a> |
+                    <a asp-page="/Account/Register">Register</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

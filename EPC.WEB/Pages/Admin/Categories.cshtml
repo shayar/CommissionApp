@@ -1,0 +1,42 @@
+﻿@page
+@model EPC.WEB.Pages.Admin.CategoriesModel
+@{
+    ViewData["Title"] = "Manage Categories";
+}
+
+<h2>Manage Categories</h2>
+
+<form method="post">
+    <div class="form-group">
+        <label asp-for="NewCategory.CategoryId">Category Code</label>
+        <input asp-for="NewCategory.CategoryId" class="form-control" />
+    </div>
+    <div class="form-group mb-2">
+        <label asp-for="NewCategory.Name" class="form-label">Category Name</label>
+        <input asp-for="NewCategory.Name" class="form-control" />
+        <span asp-validation-for="NewCategory.Name" class="text-danger"></span>
+    </div>
+    <button type="submit" class="btn btn-success">Add Category</button>
+</form>
+
+<hr />
+
+<h4>Existing Categories</h4>
+<ul class="list-group">
+    @foreach (var category in Model.Categories)
+    {
+        <li class="list-group-item d-flex justify-content-between align-items-center">
+            <span>
+                <strong>@category.Name</strong>
+                @if (category.SubCategories?.Any() == true)
+                {
+                    <small class="text-muted">(@category.SubCategories.Count subcategories)</small>
+                }
+            </span>
+        </li>
+    }
+</ul>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}
