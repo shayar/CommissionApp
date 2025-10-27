@@ -20,3 +20,22 @@ html {
 body {
   margin-bottom: 60px;
 }
+
+/* Scrollable area for subcategories */
+.sub-category-scroll-wrapper {
+    max-height: 500px; /* Adjust height as needed */
+    overflow-y: auto;
+    padding-right: 15px; /* Add space for scrollbar visual separation */
+}
+
+/* Enforce fixed width and right alignment for the commission rate badge */
+.sub-rate-display {
+    width: 80px; /* Fixed width to align percentages (e.g., 5%, 10%, 50%) */
+    text-align: right;
+    margin-right: 10px;
+}
+
+.sub-rate-display .badge {
+        min-width: 40px; /* Ensure badge itself has minimum width */
+        display: inline-block;
+    }

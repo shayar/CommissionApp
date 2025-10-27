@@ -50,7 +50,7 @@
                             @if (isEmployee)
                             {
                                 <li class="nav-item">
-                                    <a class="nav-link text-dark" asp-page="/Sales/Submit">Submit Sale</a>
+                                    <a class="nav-link text-dark" asp-page="/Sales/Log">Submit Sale</a>
                                 </li>
                                 <li class="nav-item">
                                     <a class="nav-link text-dark" asp-page="/Sales/History">My Sales</a>
@@ -59,6 +59,9 @@
 
                             @if (isAdmin)
                             {
+                                <li class="nav-item">
+                                    <a class="nav-link text-dark" asp-page="/Admin/Categories">Manage Service Category</a>
+                                </li>
                                 <li class="nav-item">
                                     <a class="nav-link text-dark" asp-page="/Admin/Reports">Reports</a>
                                 </li>

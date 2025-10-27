@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace EPC.WEB.Pages.Sales;
 
-[Authorize(Roles = "Employee")]
+[Authorize]
 public class HistoryModel : PageModel
 {
     private readonly AppDbContext _context;

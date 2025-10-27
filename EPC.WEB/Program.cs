@@ -6,6 +6,9 @@ using EPC.WEB.Middleware;
 using EPC.Infrastructure;
 using Serilog;
 using EPC.Infrastructure.Identity;
+using EPC.Application.Services.Impl;
+using EPC.Infrastructure.Repos.Impl;
+using EPC.Infrastructure.Repos;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -32,7 +35,15 @@ builder.Services.AddDefaultIdentity<AppUser>(options =>
     options.SignIn.RequireConfirmedAccount = false;
     options.Password.RequireNonAlphanumeric = false;
 }).AddRoles<IdentityRole>().AddEntityFrameworkStores<AppDbContext>();
+builder.Services.AddSingleton(Log.Logger);
+builder.Services.AddSingleton(typeof(ILogger<>), typeof(Logger<>));
+
 builder.Services.AddScoped<SaleService>();
+
+// Register the new Dashboard Service
+builder.Services.AddScoped<IDashboardService, DashboardService>();
+builder.Services.AddScoped<ICategoryRepository, CategoryRepository>();
+builder.Services.AddScoped<ICategoryManagementService, CategoryManagementService>();
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.

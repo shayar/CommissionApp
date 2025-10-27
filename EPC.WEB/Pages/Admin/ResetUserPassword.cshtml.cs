@@ -1,3 +1,4 @@
+using EPC.Application.Dtos;
 using EPC.Domain.Entities;
 using EPC.Infrastructure.Data;
 using EPC.Infrastructure.Identity;
@@ -27,7 +28,7 @@ namespace EPC.WEB.Pages.Admin
         public string? SearchTerm { get; set; }
 
         [BindProperty]
-        public List<AppUser> Users { get; set; } = new();
+        public List<UserPasswordResetDtos> Users { get; set; } = new();
 
         [BindProperty]
         public ResetPasswordInput Input { get; set; }
@@ -52,15 +53,25 @@ namespace EPC.WEB.Pages.Admin
                     u.FullName.Contains(SearchTerm) ||
                     u.EmployeeId.Contains(SearchTerm));
             }
-
-            Users = await query.OrderBy(u => u.Email).ToListAsync();
+            var appUsers = await query.OrderBy(u => u.Email).ToListAsync();
+            Users = appUsers.Select(u => new UserPasswordResetDtos
+            {
+                Id = u.Id,
+                Email = u.Email,
+                StoreId = u.StoreId,
+                EmployeeId = u.EmployeeId,
+                IsLockedOut = u.LockoutEnd.HasValue && u.LockoutEnd.Value.UtcDateTime > DateTime.UtcNow,
+                LockoutStatusDisplay = u.LockoutEnd.HasValue && u.LockoutEnd.Value.UtcDateTime > DateTime.UtcNow
+            ? $"Yes (until {u.LockoutEnd.Value.ToLocalTime().ToString("g")})"
+            : "No"
+            }).ToList();
         }
 
         public async Task<IActionResult> OnPostAsync()
         {
             if (!ModelState.IsValid)
             {
-                Users = await _userManager.Users.OrderBy(u => u.Email).ToListAsync();
+                await OnGetAsync();
                 return Page();
             }
 
@@ -108,7 +119,7 @@ namespace EPC.WEB.Pages.Admin
                 ModelState.AddModelError(string.Empty, "An unexpected error occurred.");
             }
 
-            Users = await _userManager.Users.OrderBy(u => u.Email).ToListAsync();
+            await OnGetAsync();
             return Page();
         }
     }

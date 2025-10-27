@@ -12,7 +12,7 @@ using EPC.Infrastructure.Data;
 
 namespace EPC.WEB.Pages.Sales
 {
-    [Authorize(Roles = "Employee")]
+    [Authorize]
     public class LogModel : PageModel
     {
         private readonly AppDbContext _context;

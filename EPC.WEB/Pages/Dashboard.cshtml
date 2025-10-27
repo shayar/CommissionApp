@@ -1,0 +1,165 @@
+﻿@page
+@model EPC.WEB.Pages.DashboardModel
+@{
+    ViewData["Title"] = "Dashboard";
+}
+
+<h1 class="mb-4">Welcome, @Model.FullName</h1>
+<hr />
+
+@if (Model.IsAdmin)
+{
+    <h2>Admin Overview (Current Month)</h2>
+    <p class="text-muted">Aggregate performance indicators across all employees and categories.</p>
+    
+    <div class="row mb-5">
+        
+        <div class="col-lg-6 mb-4">
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-success text-white">
+                    <i class="bi bi-star-fill"></i> Top 5 Employees by Sales
+                </div>
+                <ul class="list-group list-group-flush">
+                    @if (Model.TopEmployees != null && Model.TopEmployees.Any())
+                    {
+                        @foreach (var employee in Model.TopEmployees.Select((e, i) => new { Index = i, Employee = e }))
+                        {
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                <div>
+                                    <strong>@(employee.Index + 1). @employee.Employee.EmployeeFullName</strong>
+                                    <div class="text-muted small">Total Sales: @employee.Employee.TotalSales.ToString("C2")</div>
+                                </div>
+                                <span class="badge bg-primary rounded-pill">Comm. Earned: @employee.Employee.TotalCommission.ToString("C2")</span>
+                            </li>
+                        }
+                    }
+                    else
+                    {
+                        <li class="list-group-item text-muted text-center py-4">No sales recorded this month yet.</li>
+                    }
+                </ul>
+            </div>
+        </div>
+        
+        <div class="col-lg-6 mb-4">
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-primary text-white">Sales by Category Distribution</div>
+                <div class="card-body d-flex justify-content-center align-items-center">
+                    <canvas id="categorySalesChart" style="max-height: 400px;"></canvas>
+                    <p id="noChartDataMessage" class="text-center text-muted m-4 d-none">No sales data found for the current month to generate a chart.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="text-center mt-4">
+        <a asp-page="/Admin/Reports" class="btn btn-lg btn-outline-primary">View Detailed Reports &rarr;</a>
+    </div>
+}
+else // Employee View
+{
+    <h2>Your Performance Summary (Current Month)</h2>
+    <p class="text-muted">Your personal sales and commission totals for the period starting @(new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1).ToShortDateString()).</p>
+    <div class="row justify-content-center mt-4">
+        
+        <div class="col-md-4 mb-3">
+            <div class="card text-white bg-primary shadow-lg h-100">
+                <div class="card-body">
+                    <h5 class="card-title">Total Sales</h5>
+                    <p class="card-text fs-2">@Model.EmployeeSummary?.TotalSales.ToString("C2")</p>
+                    <p class="card-text small">Number of sales: @Model.EmployeeSummary?.SaleCount</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4 mb-3">
+            <div class="card text-white bg-success shadow-lg h-100">
+                <div class="card-body">
+                    <h5 class="card-title">Commission Earned</h5>
+                    <p class="card-text fs-2">@Model.EmployeeSummary?.TotalCommission.ToString("C2")</p>
+                    <p class="card-text small">Your estimated commission for this month.</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-12 mt-4 text-center">
+            <a asp-page="/Sales/Submit" class="btn btn-lg btn-warning shadow-sm">
+                <i class="bi bi-plus-circle-fill"></i> **Submit a New Sale Now**
+            </a>
+            <a asp-page="/Sales/History" class="btn btn-lg btn-outline-secondary ms-3">
+                <i class="bi bi-list-columns-reverse"></i> View My Sales History
+            </a>
+        </div>
+    </div>
+}
+
+@section Scripts {
+    <script src="~/lib/chartjs/chart.min.js"></script> 
+    
+    @if (Model.IsAdmin)
+    {
+        <script>
+            // Prepare the aggregated data from the Page Model
+            const categorySalesData = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.CategorySales));
+
+            if (categorySalesData.length > 0) {
+                const categoryLabels = categorySalesData.map(c => c.CategoryName);
+                const categoryTotals = categorySalesData.map(c => c.TotalSales);
+
+                const ctx = document.getElementById('categorySalesChart').getContext('2d');
+                
+                // Static color palette for consistent charts
+                const backgroundColors = [
+                    '#0d6efd', '#198754', '#ffc107', '#dc3545', '#6c757d', '#20c997', '#fd7e14', '#6610f2', '#f8f9fa'
+                ];
+
+                new Chart(ctx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: categoryLabels,
+                        datasets: [{
+                            label: 'Total Sales Amount',
+                            data: categoryTotals,
+                            // Cycle through background colors
+                            backgroundColor: categoryLabels.map((_, i) => backgroundColors[i % backgroundColors.length]), 
+                            hoverOffset: 4
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'right',
+                                align: 'start',
+                                labels: {
+                                    boxWidth: 15,
+                                    padding: 20
+                                }
+                            },
+                            tooltip: {
+                                // Customize tooltips to show sales in currency format
+                                callbacks: {
+                                    label: function(context) {
+                                        let label = context.label || '';
+                                        if (label) {
+                                            label += ': ';
+                                        }
+                                        if (context.parsed !== null) {
+                                            label += new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(context.parsed);
+                                        }
+                                        return label;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            } else {
+                // If no sales data, hide canvas and show a message
+                document.getElementById('categorySalesChart').style.display = 'none';
+                document.getElementById('noChartDataMessage').classList.remove('d-none');
+            }
+        </script>
+    }
+}
