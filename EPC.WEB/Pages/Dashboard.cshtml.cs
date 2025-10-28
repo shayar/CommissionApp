@@ -47,7 +47,9 @@ namespace EPC.WEB.Pages
 
             FullName = user.FullName ?? user.Email ?? "User";
             IsAdmin = await _userManager.IsInRoleAsync(user, "Admin");
-            var currentMonthStart = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1);
+
+            var now = DateTime.UtcNow;
+            var currentMonthStart = new DateTime(now.Year, now.Month, 1, 0, 0, 0, DateTimeKind.Utc); // Start of the current UTC month
 
             if (IsAdmin)
             {

@@ -11,5 +11,9 @@
         public decimal Amount { get; set; }
         public DateTime Date { get; set; }
         public decimal CalculatedCommission { get; set; }
+
+        public string PaymentType { get; set; } = default!; // "Cash" or "Card"
+        public string? TrackingNumber { get; set; } // Optional: For Shipping, etc.
+        public string? Description { get; set; } // Optional: For Miscellaneous sales
     }
 }

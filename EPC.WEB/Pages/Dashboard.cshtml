@@ -83,7 +83,7 @@ else // Employee View
         </div>
         
         <div class="col-12 mt-4 text-center">
-            <a asp-page="/Sales/Submit" class="btn btn-lg btn-warning shadow-sm">
+            <a asp-page="/Sales/Log" class="btn btn-lg btn-warning shadow-sm">
                 <i class="bi bi-plus-circle-fill"></i> **Submit a New Sale Now**
             </a>
             <a asp-page="/Sales/History" class="btn btn-lg btn-outline-secondary ms-3">
@@ -94,8 +94,8 @@ else // Employee View
 }
 
 @section Scripts {
-    <script src="~/lib/chartjs/chart.min.js"></script> 
-    
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
     @if (Model.IsAdmin)
     {
         <script>

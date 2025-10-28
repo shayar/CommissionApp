@@ -38,12 +38,14 @@ builder.Services.AddDefaultIdentity<AppUser>(options =>
 builder.Services.AddSingleton(Log.Logger);
 builder.Services.AddSingleton(typeof(ILogger<>), typeof(Logger<>));
 
-builder.Services.AddScoped<SaleService>();
 
-// Register the new Dashboard Service
+
+builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IDashboardService, DashboardService>();
 builder.Services.AddScoped<ICategoryRepository, CategoryRepository>();
 builder.Services.AddScoped<ICategoryManagementService, CategoryManagementService>();
+builder.Services.AddScoped<ISaleRepository, SaleRepository>();
+builder.Services.AddScoped<ISaleService, SaleService>();
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.

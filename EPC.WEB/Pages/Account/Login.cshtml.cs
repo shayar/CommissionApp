@@ -54,6 +54,12 @@ namespace EPC.WEB.Pages.Account
 
         public async Task<IActionResult> OnGetAsync(string returnUrl = null)
         {
+            if (User.Identity.IsAuthenticated)
+            {
+                Log.Information("Authenticated user redirected from login page.");
+                return RedirectToPage("/Dashboard");
+            }
+
             ReturnUrl = returnUrl ?? Url.Content("~/");
 
 
@@ -72,7 +78,12 @@ namespace EPC.WEB.Pages.Account
         public async Task<IActionResult> OnPostAsync(string returnUrl = null)
         {
             ReturnUrl = returnUrl ?? Url.Content("~/");
-            if (!ModelState.IsValid) return Page();
+            if (!ModelState.IsValid)
+            {
+                var store = await _context.Stores.FirstOrDefaultAsync();
+                StoreName = store?.Name ?? "Application";
+                return Page();
+            }
 
 
             try
@@ -138,7 +149,8 @@ namespace EPC.WEB.Pages.Account
                 Log.Error(ex, "Login failed for user {User}", Input.EmployeeOrEmail);
                 ModelState.AddModelError(string.Empty, "Login failed. Please try again later.");
             }
-
+            var failedStore = await _context.Stores.FirstOrDefaultAsync();
+            StoreName = failedStore?.Name ?? "Application";
 
             return Page();
         }

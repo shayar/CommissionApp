@@ -1,70 +1,159 @@
 ﻿@page
+@using Microsoft.AspNetCore.Authorization
 @using Microsoft.AspNetCore.Mvc.Rendering
+@using System.Globalization
+@using System.Text.Json
 @model EPC.WEB.Pages.Admin.ReportsModel
+@attribute [Authorize(Roles = "Admin")]
 
 @{
-    ViewData["Title"] = "Sales Report";
+    ViewData["Title"] = "Sales and Commission Report";
 }
 
-<h2 class="mb-4">Sales Report</h2>
+<h2 class="mb-4">Sales and Commission Report</h2>
 
-<form method="get" class="row g-3 mb-4">
-    <div class="col-md-4">
+<form method="get" class="row g-3 mb-4 card p-3 shadow-sm">
+    <div class="col-md-3">
         <label asp-for="AppUserId" class="form-label">Employee</label>
         <select asp-for="AppUserId" asp-items="@(new SelectList(Model.Employees, "Id", "FullName"))" class="form-select">
-            <option value="">All</option>
+            <option value="">All Employees</option>
         </select>
     </div>
-    <div class="col-md-4">
+    <div class="col-md-3">
         <label class="form-label">Start Date</label>
         <input type="date" asp-for="StartDate" class="form-control" />
     </div>
-    <div class="col-md-4">
+    <div class="col-md-3">
         <label class="form-label">End Date</label>
         <input type="date" asp-for="EndDate" class="form-control" />
     </div>
-    <div class="col-md-8">
-        <label asp-for="Search" class="form-label">Search Category or Subcategory</label>
+    <div class="col-md-9">
+        <label asp-for="Search" class="form-label">Search Category, Subcategory, or Description</label>
         <input asp-for="Search" class="form-control" placeholder="Search..." />
     </div>
-    <div class="col-md-4 align-self-end">
+    <div class="col-md-3 align-self-end">
         <button type="submit" class="btn btn-primary w-100">Apply Filters</button>
     </div>
 </form>
 
-@if (Model.TotalsByCategory.Any())
-{
-    <canvas id="salesChart" width="800" height="400"></canvas>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script>
-        const data = {
-            labels: @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(Model.TotalsByCategory.Keys)),
-            datasets: [{
-                label: 'Sales by Category',
-                data: @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(Model.TotalsByCategory.Values)),
-                backgroundColor: 'rgba(75, 192, 192, 0.5)',
-                borderColor: 'rgba(75, 192, 192, 1)',
-                borderWidth: 1
-            }]
-        };
+<div class="row mb-5">
+    <div class="col-md-4">
+        <div class="card text-white bg-dark shadow-sm h-100">
+            <div class="card-body">
+                <h5 class="card-title">Grand Total Sales</h5>
+                <p class="card-text fs-3">@Model.ReportData.GrandTotalSales.ToString("C2", CultureInfo.CurrentCulture)</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card text-white bg-info shadow-sm h-100">
+            <div class="card-body">
+                <h5 class="card-title">Grand Total Commission</h5>
+                <p class="card-text fs-3">@Model.ReportData.GrandTotalCommission.ToString("C2", CultureInfo.CurrentCulture)</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4 align-self-end">
+        <form method="post" asp-page-handler="ExportExcel">
+            <input type="hidden" asp-for="AppUserId" />
+            <input type="hidden" asp-for="StartDate" />
+            <input type="hidden" asp-for="EndDate" />
+            <input type="hidden" asp-for="Search" />
+            <button type="submit" class="btn btn-success btn-lg w-100">
+                <i class="bi bi-file-earmark-spreadsheet"></i> Export to Excel
+            </button>
+        </form>
+    </div>
+</div>
 
-        new Chart(document.getElementById('salesChart'), {
-            type: 'bar',
-            data: data,
-            options: {
-                responsive: true,
-                plugins: {
-                    legend: { position: 'top' },
-                    title: {
-                        display: true,
-                        text: 'Filtered Sales by Category'
-                    }
+@if (Model.ReportData.TotalsByCategory.Any())
+{
+    <div class="card p-3 shadow-sm mb-4">
+        <canvas id="salesChart" height="150"></canvas>
+    </div>
+
+    <h3 class="mb-3">Detailed Sales Transactions</h3>
+    <div class="table-responsive">
+        <table class="table table-striped table-bordered align-middle">
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Employee</th>
+                    <th>Category</th>
+                    <th>SubCategory</th>
+                    <th>Amount</th>
+                    <th>Commission</th>
+                    <th>Payment Type</th>
+                    <th>Description/Tracking</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var s in Model.ReportData.SalesDetails)
+                {
+                    <tr>
+                        <td>@s.Date.ToShortDateString()</td>
+                        <td>@s.EmployeeName</td>
+                        <td>@s.CategoryName</td>
+                        <td>@s.SubCategoryName</td>
+                        <td>@s.Amount.ToString("C2", CultureInfo.CurrentCulture)</td>
+                        <td class="text-success">@s.CommissionEarned.ToString("C2", CultureInfo.CurrentCulture)</td>
+                        <td>@s.PaymentType</td>
+                        <td>
+                            @if (!string.IsNullOrEmpty(s.TrackingNumber))
+                            {
+                                <small class="d-block text-muted">Track: @s.TrackingNumber</small>
+                            }
+                            @s.Description
+                        </td>
+                    </tr>
                 }
-            }
-        });
-    </script>
+            </tbody>
+        </table>
+    </div>
 }
 else
 {
-    <p class="text-muted">No sales data found for the selected filters.</p>
+    <div class="alert alert-info">No sales data found for the selected filters.</div>
+}
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    @if (Model.ReportData.TotalsByCategory.Any())
+    {
+        <script>
+            const totals = @Html.Raw(JsonSerializer.Serialize(Model.ReportData.TotalsByCategory));
+            const labels = Object.keys(totals);
+            const dataValues = Object.values(totals);
+
+            const colors = ['#0d6efd', '#198754', '#ffc107', '#dc3545', '#6c757d', '#20c997', '#fd7e14'];
+
+            new Chart(document.getElementById('salesChart'), {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Total Sales Amount ($)',
+                        data: dataValues,
+                        backgroundColor: colors.map((c, i) => colors[i % colors.length]),
+                        borderColor: colors.map((c, i) => colors[i % colors.length]),
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: { display: false },
+                        title: { display: true, text: 'Sales Totals by Category' }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: { display: true, text: 'Sales Amount' }
+                        }
+                    }
+                }
+            });
+        </script>
+    }
 }

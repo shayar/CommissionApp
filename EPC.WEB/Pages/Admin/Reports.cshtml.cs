@@ -1,11 +1,14 @@
+
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.AspNetCore.Authorization;
 using EPC.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
-using EPC.Domain.Entities;
 using Microsoft.AspNetCore.Mvc;
 using EPC.Infrastructure.Identity;
 using Serilog;
+using EPC.Application.Dtos;
+using EPC.Application.Services;
+using System.Text;
 
 namespace EPC.WEB.Pages.Admin
 {
@@ -13,16 +16,21 @@ namespace EPC.WEB.Pages.Admin
     public class ReportsModel : PageModel
     {
         private readonly AppDbContext _context;
+        private readonly ISaleService _saleService; // Application Interface dependency
+        private readonly Serilog.ILogger _logger;
 
-        public ReportsModel(AppDbContext context)
+        public ReportsModel(AppDbContext context, ISaleService saleService, Serilog.ILogger logger)
         {
             _context = context;
+            _saleService = saleService;
+            _logger = logger.ForContext<ReportsModel>();
         }
 
-        public List<Sale> Sales { get; set; } = new();
-        public Dictionary<string, decimal> TotalsByCategory { get; set; } = new();
+        // Output Data
+        public SalesReportDto ReportData { get; set; } = new();
         public List<AppUser> Employees { get; set; } = new();
 
+        // Input Filters (Bound from the form via GET)
         [BindProperty(SupportsGet = true)] public string? AppUserId { get; set; }
         [BindProperty(SupportsGet = true)] public DateTime? StartDate { get; set; }
         [BindProperty(SupportsGet = true)] public DateTime? EndDate { get; set; }
@@ -32,40 +40,77 @@ namespace EPC.WEB.Pages.Admin
         {
             try
             {
-                var query = _context.Sales
-                    .Include(s => s.SubCategory)
-                        .ThenInclude(sc => sc.Category)
-                    .AsQueryable();
+                // Load all employees (Admin, Employee, Developer roles) for the filter dropdown
+                Employees = await _context.Users.Where(u => u.Email != "admin@epc.com").ToListAsync();
 
-                Employees = await _context.Users.ToListAsync();
+                // 1. Construct Filter DTO
+                var filters = new AdminReportFilter
+                {
+                    AppUserId = AppUserId,
+                    StartDate = StartDate,
+                    EndDate = EndDate,
+                    SearchTerm = Search
+                };
 
-                if (!string.IsNullOrEmpty(AppUserId))
-                    query = query.Where(s => s.AppUserId == AppUserId);
+                // 2. Retrieve Report Data from Application Service
+                ReportData = await _saleService.GetAdminSalesReportAsync(filters);
 
-                if (StartDate.HasValue)
-                    query = query.Where(s => s.Date >= StartDate.Value);
-
-                if (EndDate.HasValue)
-                    query = query.Where(s => s.Date <= EndDate.Value);
-
-                if (!string.IsNullOrWhiteSpace(Search))
-                    query = query.Where(s =>
-                        s.SubCategory.Name.Contains(Search) ||
-                        s.SubCategory.Category.Name.Contains(Search));
-
-                Sales = await query.ToListAsync();
-
-                TotalsByCategory = Sales
-                    .GroupBy(s => s.SubCategory.Category.Name)
-                    .ToDictionary(g => g.Key, g => g.Sum(s => s.Amount));
-
-                Log.Information("Admin viewed sales report with filters. Employee: {Employee}, Start: {Start}, End: {End}, Search: {Search}", AppUserId, StartDate, EndDate, Search);
+                _logger.Information("Admin viewed sales report. Total Sales: {TotalSales}. Filters: Employee: {Employee}, Start: {Start}, End: {End}, Search: {Search}",
+                    ReportData.GrandTotalSales.ToString("C2"), AppUserId, StartDate, EndDate, Search);
             }
             catch (Exception ex)
             {
-                Log.Error(ex, "Failed to load sales reports");
+                _logger.Error(ex, "Failed to load sales reports for admin.");
                 ModelState.AddModelError(string.Empty, "Something went wrong while loading the report. Please try again.");
             }
+        }
+
+        public async Task<IActionResult> OnPostExportExcel()
+        {
+            // Simple method to force download of data (detailed implementation below)
+            await OnGetAsync();
+
+            // Check for immediate errors during data retrieval (from OnGetAsync's exception handler)
+            if (!ModelState.IsValid)
+            {
+                // If data loading failed, return the page to show errors.
+                return Page();
+            }
+            // 1. Prepare CSV Content
+            var builder = new StringBuilder();
+
+            // Add Header Row
+            builder.AppendLine("Date,Employee,Category,SubCategory,Amount,Commission Earned,Payment Type,Tracking Number,Description");
+
+            // Add Data Rows
+            foreach (var s in ReportData.SalesDetails)
+            {
+                // Simple CSV encoding: Ensure no commas in data fields are messing up the structure.
+                // We enclose complex strings (like Description) in quotes.
+                string descriptionClean = $"\"{s.Description?.Replace("\"", "\"\"")}\"";
+                string trackingClean = $"\"{s.TrackingNumber?.Replace("\"", "\"\"")}\"";
+
+                builder.AppendLine(
+                    $"{s.Date.ToShortDateString()}," +
+                    $"{s.EmployeeName}," +
+                    $"{s.CategoryName}," +
+                    $"{s.SubCategoryName}," +
+                    $"{s.Amount}," +
+                    $"{s.CommissionEarned}," +
+                    $"{s.PaymentType}," +
+                    $"{trackingClean}," +
+                    $"{descriptionClean}"
+                );
+            }
+
+            // 2. Convert to Byte Array
+            var bytes = Encoding.UTF8.GetBytes(builder.ToString());
+
+            // 3. Return FileResult
+            _logger.Information("Exported sales report to CSV. Count: {Count}", ReportData.SalesDetails.Count);
+
+            // Use File() to trigger a download
+            return File(bytes, "text/csv", $"Sales_Report_{DateTime.Now:yyyyMMdd_HHmmss}.csv");
         }
     }
 }

@@ -48,28 +48,34 @@ namespace EPC.Application.Services.Impl
         {
             try
             {
-                // Note: This relies on the SubCategory -> Category navigation property being correctly
-                // configured in AppDbContext to allow EF Core to translate the nested join to SQL.
                 var categorySales = await _context.Sales
+                    .Where(s => s.Date >= startDate)
                     .Include(s => s.SubCategory)
                     .ThenInclude(sc => sc.Category)
-                    .Where(s => s.Date >= startDate)
-                    .GroupBy(s => s.SubCategory.Category.Name)
+                    .AsNoTracking()
+                    .Select(s => new
+                    {
+                        CategoryName = s.SubCategory.Category.Name,
+                        Amount = s.Amount
+                    })
+                    .GroupBy(x => x.CategoryName)
                     .Select(g => new CategorySalesDto
                     {
                         CategoryName = g.Key,
-                        TotalSales = g.Sum(s => s.Amount)
+                        TotalSales = (decimal)g.Sum(x => (double)x.Amount)
                     })
-                    .OrderByDescending(d => d.TotalSales)
-                    .AsNoTracking()
                     .ToListAsync();
 
-                _logger.Information("Generated sales by category report from {StartDate}", startDate.ToShortDateString());
-                return categorySales;
+                var rankedSales = categorySales
+                    .OrderByDescending(d => d.TotalSales)
+                    .ToList();
+
+                _logger.Information("Generated sales by category report from {StartDate}. Found {Count} categories.", startDate.ToShortDateString(), rankedSales.Count);
+                return rankedSales;
             }
             catch (Exception ex)
             {
-                _logger.Error(ex, "Error fetching sales by category data.");
+                _logger.Error(ex, "FATAL ERROR: Failed to translate complex sales category query. Database query failed.");
                 return new List<CategorySalesDto>();
             }
         }
@@ -84,20 +90,22 @@ namespace EPC.Application.Services.Impl
                     .Select(g => new EmployeePerformanceDto
                     {
                         AppUserId = g.Key,
-                        TotalSales = g.Sum(s => s.Amount),
-                        TotalCommission = g.Sum(s => s.CalculatedCommission)
+                        TotalSales = (decimal)g.Sum(s => (double)s.Amount),
+                        TotalCommission = (decimal)g.Sum(s => (double)s.CalculatedCommission)
                     })
-                    .OrderByDescending(d => d.TotalSales)
-                    .Take(count)
-                    .AsNoTracking()
                     .ToListAsync();
 
-                _logger.Information("Generated top {Count} employee performance list from {StartDate}", count, startDate.ToShortDateString());
-                return performanceData;
+                var rankedData = performanceData
+                    .OrderByDescending(d => d.TotalSales)
+                    .Take(count)
+                    .ToList(); // Execute to List<T> in memory before returning
+
+                _logger.Information("Generated top {Count} employee performance list from {StartDate}", rankedData.Count, startDate.ToShortDateString());
+                return rankedData; // Return the concrete list (Task<List<T>> is implicitly handled by the async signature)
             }
             catch (Exception ex)
             {
-                _logger.Error(ex, "Error fetching top employee performance data.");
+                _logger.Error(ex, "Error fetching top employee performance data. SQLite decimal issue suspected.", ex);
                 return new List<EmployeePerformanceDto>();
             }
         }

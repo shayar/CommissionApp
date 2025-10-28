@@ -58,6 +58,11 @@ namespace EPC.WEB.Pages.Account
 
         public async Task<IActionResult> OnGetAsync(string returnUrl = null)
         {
+            if (User.Identity.IsAuthenticated)
+            {
+                Log.Information("Authenticated user redirected from register page.");
+                return RedirectToPage("/Dashboard");
+            }
             ReturnUrl = returnUrl ?? Url.Content("~/");
 
             var store = await _context.Stores.FirstOrDefaultAsync();

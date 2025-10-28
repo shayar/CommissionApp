@@ -25,6 +25,7 @@ namespace EPC.Infrastructure.Data
     .HasOne<AppUser>()
     .WithMany(u => u.Sales)
     .HasForeignKey(s => s.AppUserId)
+    .IsRequired()
     .OnDelete(DeleteBehavior.Restrict);
         }
     }
